@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incidencias Urbanas - Monterrey</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-1: #CDB28A;
+            --color-2: #F9F4E3;
+            --color-3: #D4DDB1;
+            --color-4: #B1BA8E;
+            --color-5: #7A6448;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--color-2) 0%, var(--color-3) 100%);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: white;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            color: var(--color-5);
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            padding: 0 2.5rem;
+            letter-spacing: -0.5px;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .navbar-menu {
+            display: flex;
+            gap: 0;
+            list-style: none;
+            align-items: stretch;
+            /* margin: 10px; */
+            padding: 0 2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+            font-weight: 500;
+            font-size: 0.95rem;
+            position: relative;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--color-5);
+            background: var(--color-2);
+        }
+
+        .nav-item.active {
+            color: var(--color-5);
+            border-bottom-color: var(--color-5);
+            font-weight: 600;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Card Grid Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .map-placeholder {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            grid-column: 1 / -1;
+            margin-bottom: 1rem;
+        }
+
+        .map-placeholder-text {
+            color: #1976D2;
+            font-size: 1.2rem;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        #map {
+            display: none;
+        }
+
+        /* Incident Cards */
+        .filters-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.6rem 1.5rem;
+            border: 2px solid var(--color-4);
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            color: var(--color-5);
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            background: var(--color-2);
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: var(--color-5);
+            color: white;
+            border-color: var(--color-5);
+        }
+
+        .incident-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid var(--color-4);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            height: fit-content;
+        }
+
+        .incident-card:hover {
+            transform: translateY(-5px);
+            border-left-color: var(--color-5);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .incident-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .incident-type {
+            font-weight: 700;
+            color: var(--color-5);
+            font-size: 0.95rem;
+        }
+
+        .incident-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-pending { background: #FFE5B4; color: #8B6914; }
+        .status-progress { background: #B4D7FF; color: #14468B; }
+        .status-resolved { background: #B4FFB4; color: #146B14; }
+
+        .incident-description {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .incident-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* Report Actions */
+        .report-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--color-5);
+            transition: all 0.3s;
+            height: fit-content;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .btn-edit {
+            background: var(--color-3);
+            color: var(--color-5);
+        }
+
+        .btn-edit:hover {
+            background: var(--color-4);
+            color: white;
+        }
+
+        .btn-delete {
+            background: #ffcccc;
+            color: #cc0000;
+        }
+
+        .btn-delete:hover {
+            background: #ff9999;
+        }
+
+        .btn-new {
+            background: var(--color-5);
+            color: white;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+        }
+
+        .btn-new:hover {
+            background: var(--color-4);
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .navbar-brand {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                padding: 1.2rem 2rem;
+            }
+
+            .navbar-menu {
+                width: 100%;
+                padding: 0;
+            }
+
+            .nav-item {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            Incidencias Urbanas
+        </div>
+        <ul class="navbar-menu">
+            <li class="nav-item active" data-page="reportes">Reportes</li>
+            <li class="nav-item" data-page="mis-reportes">Mis Reportes</li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Página de Reportes -->
+        <div id="reportes" class="page active">
+            <div class="page-header">
+                <h1 class="page-title">Incidencias Reportadas</h1>
+            </div>
+
+            <!-- Map Placeholder -->
+            <div class="map-placeholder" onclick="alert('Funcionalidad de mapa proximamente.')">
+                <div class="map-placeholder-text">Area del Mapa</div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">Todas</button>
+                    <button class="filter-btn" data-filter="bache">Baches</button>
+                    <button class="filter-btn" data-filter="alumbrado">Alumbrado</button>
+                    <button class="filter-btn" data-filter="basura">Basura</button>
+                    <button class="filter-btn" data-filter="vandalismo">Vandalismo</button>
+                </div>
+            </div>
+
+            <!-- Incidents Grid -->
+            <div class="content-grid" id="incidents-container"></div>
+        </div>
+
+        <!-- Página de Mis Reportes -->
+        <div id="mis-reportes" class="page">
+            <div class="page-header">
+                <h1 class="page-title">Mis Reportes</h1>
+                <button class="btn btn-new" onclick="alert('Funcionalidad de nuevo reporte proximamente')">+ Nuevo Reporte</button>
+            </div>
+
+            <div class="content-grid" id="my-reports-container"></div>
+        </div>
+    </div>
+
+    <div id="map" style="display: none;"></div>
+
+    <script>
+        // Datos de ejemplo
+        const incidents = [
+            {
+                id: 1,
+                type: 'Bache',
+                category: 'bache',
+                description: 'Bache grande en Av. Constitución y Pino Suárez',
+                lat: 25.6714,
+                lng: -100.3089,
+                status: 'pending',
+                date: '2026-02-10',
+                user: 'María González'
+            },
+            {
+                id: 2,
+                type: 'Alumbrado Público',
+                category: 'alumbrado',
+                description: 'Falta de iluminación en Parque Fundidora',
+                lat: 25.6788,
+                lng: -100.2768,
+                status: 'progress',
+                date: '2026-02-11',
+                user: 'Juan Pérez'
+            },
+            {
+                id: 3,
+                type: 'Basura Acumulada',
+                category: 'basura',
+                description: 'Acumulación de basura en Col. Obispado',
+                lat: 25.6680,
+                lng: -100.3370,
+                status: 'pending',
+                date: '2026-02-12',
+                user: 'Ana Martínez'
+            },
+            {
+                id: 4,
+                type: 'Vandalismo',
+                category: 'vandalismo',
+                description: 'Graffiti en Macroplaza',
+                lat: 25.6692,
+                lng: -100.3099,
+                status: 'resolved',
+                date: '2026-02-08',
+                user: 'Carlos López'
+            },
+            {
+                id: 5,
+                type: 'Bache',
+                category: 'bache',
+                description: 'Bache profundo en Av. Gonzalitos',
+                lat: 25.6650,
+                lng: -100.3450,
+                status: 'progress',
+                date: '2026-02-13',
+                user: 'Luis Hernández'
+            },
+            {
+                id: 6,
+                type: 'Alumbrado Público',
+                category: 'alumbrado',
+                description: 'Poste de luz dañado en Col. Del Valle',
+                lat: 25.6500,
+                lng: -100.3200,
+                status: 'pending',
+                date: '2026-02-14',
+                user: 'Rosa Sánchez'
+            }
+        ]
+
+        const myReports = [
+            {
+                id: 1,
+                type: 'Bache',
+                description: 'Bache grande en Av. Constitución y Pino Suárez',
+                status: 'pending',
+                date: '2026-02-10',
+                location: 'Centro de Monterrey'
+            },
+            {
+                id: 5,
+                type: 'Bache',
+                description: 'Bache profundo en Av. Gonzalitos',
+                status: 'progress',
+                date: '2026-02-13',
+                location: 'Col. Mitras Centro'
+            }
+        ]
+
+        // const svg = {
+        //     svgLapiz: (
+        //         <>
+        //             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+        //                 <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+        //                 <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+        //             </svg>
+        //         </>
+        //     ),
+        //     svgBasura: (
+        //         <>
+        //             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+        //                 <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/>
+        //             </svg>
+        //         </>
+        //     ),
+        //     svgUsuario: (
+        //         <>
+        //             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16">
+        //                 <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+        //             </svg>
+        //         </>
+        //     ),
+        //     svgCalendario: (
+        //         <>
+        //             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar2-event" viewBox="0 0 16 16">
+        //                 <path d="M11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z"/>
+        //                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/>
+        //                 <path d="M2.5 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5z"/>
+        //             </svg>
+        //         </>
+        //     ),
+        //     svgPunto: (
+        //         <>
+        //         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-fill" viewBox="0 0 16 16">
+        //             <path fill-rule="evenodd" d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411"/>
+        //         </svg></>
+        //     )
+        // }
+
+        // Renderizar lista de incidencias
+        
+        function renderIncidents(incidentsToShow = incidents) {
+            const container = document.getElementById('incidents-container')
+            container.innerHTML = incidentsToShow.map(incident => `
+                <div class="incident-card" onclick="alert('Funcionalidad tipo modal con info extra próximamente')">
+                    <div class="incident-header">
+                        <div class="incident-type">${incident.type}</div>
+                        <div class="incident-status status-${incident.status}">${getStatusText(incident.status)}</div>
+                    </div>
+                    <div class="incident-description">${incident.description}</div>
+                    <div class="incident-footer">
+                        <span>${incident.date}</span>
+                        <span>${incident.user}</span>
+                    </div>
+                </div>
+            `).join('')
+        }
+
+        renderIncidents()
+
+        // Renderizar mis reportes
+        function renderMyReports() {
+            const container = document.getElementById('my-reports-container')
+            container.innerHTML = myReports.map(report => `
+                <div class="report-card">
+                    <div class="incident-header">
+                        <div class="incident-type">${report.type}</div>
+                        <div class="incident-status status-${report.status}">${getStatusText(report.status)}</div>
+                    </div>
+                    <div class="incident-description">${report.description}</div>
+                    <div class="incident-footer">
+                        <span>${report.date}</span>
+                        <span>${report.location}</span>
+                    </div>
+                    <div class="report-actions">
+                        <button class="btn btn-edit" onclick="editReport(${report.id})">Editar</button>
+                        <button class="btn btn-delete" onclick="deleteReport(${report.id})">Eliminar</button>
+                    </div>
+                </div>
+            `).join('')
+        }
+
+        renderMyReports()
+
+        // Navegación
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Actualizar nav items
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'))
+                this.classList.add('active')
+
+                // Cambiar página
+                const page = this.dataset.page
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+                document.getElementById(page).classList.add('active')
+            })
+        })
+
+        // Filtros
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+                this.classList.add('active')
+
+                const filter = this.dataset.filter
+                let filtered = incidents
+                
+                if (filter !== 'all') {
+                    filtered = incidents.filter(i => i.category === filter)
+                }
+
+                renderIncidents(filtered)
+            })
+        })
+
+        // Funciones auxiliares
+        function getStatusText(status) {
+            const statusMap = {
+                pending: 'Pendiente',
+                progress: 'En Progreso',
+                resolved: 'Resuelto'
+            }
+            return statusMap[status] || status
+        }
+
+        function editReport(id) {
+            alert(`Funcionalidad proximamente`)
+        }
+
+        function deleteReport(id) {
+            if (confirm('¿Estás seguro de eliminar este reporte?')) {
+                alert(`Funcionalidad proximamente`)
+            }
+        }
+    </script>
+</body>
+</html>
