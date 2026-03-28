@@ -1,7 +1,6 @@
 const express = require("express")
 const cors = require("cors")
 const dotenv = require("dotenv")
-
 dotenv.config()
 
 const env = {
@@ -20,7 +19,18 @@ app.use(cors({
 }))
 
 // connect DB
+const DB = require("./config/configDB")
 
+const connectDB = async () => {
+    try {
+        await DB.authenticate()
+        console.log("Conexion a la base de datos establecida correctamente")
+    } catch (error) {
+        console.error("No se pudo conectar a la base de datos:", error)
+    }
+}
+
+connectDB()
 
 // endpoints
 
