@@ -10,6 +10,23 @@ const CatalogIncidents = sequelize.define("catalog_incidents", {
     name: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    color: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    created_by: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    created_at: {
+        type: DataTypes.DATE
+    },
+    updated_by: {
+        type: DataTypes.INTEGER
+    },
+    updated_at: {
+        type: DataTypes.DATE
     }
 }, {
     timestamps: false

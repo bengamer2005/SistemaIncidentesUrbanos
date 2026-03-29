@@ -1,26 +1,25 @@
 const { DataTypes } = require("sequelize")
 const sequelize = require("../config/configDB")
 
-const StatusIncidents = sequelize.define("status_incidents", {
-    status_incidents_id: {
+const IncidentReports = sequelize.define("incident_reports", {
+    incident_report_id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
     },
-    name: {
-        type: DataTypes.STRING,
+    incidents_id: {
+        type: DataTypes.INTEGER,
         allowNull: false
     },
-    description: {
-        type: DataTypes.STRING,
+    users_id: {
+        type: DataTypes.INTEGER,
         allowNull: false
     },
-    color: {
-        type: DataTypes.STRING,
-        allowNull: false
+    created_at: {
+        type: DataTypes.DATE
     }
 }, {
     timestamps: false
 })
 
-module.exports = StatusIncidents
+module.exports = IncidentReports
