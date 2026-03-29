@@ -129,7 +129,7 @@
         }
 
         #map {
-            display: none;
+            width: 100%;
         }
 
         /* Incident Cards */
@@ -348,9 +348,7 @@
             </div>
 
             <!-- Map Placeholder -->
-            <div class="map-placeholder" onclick="alert('Funcionalidad de mapa proximamente.')">
-                <div class="map-placeholder-text">Area del Mapa</div>
-            </div>
+            <div id="map" style="height: 350px; border-radius: 15px; margin-bottom: 1rem;"></div>
 
             <!-- Filters -->
             <div class="filters-section">
@@ -377,8 +375,6 @@
             <div class="content-grid" id="my-reports-container"></div>
         </div>
     </div>
-
-    <div id="map" style="display: none;"></div>
 
     <script>
         // Datos de ejemplo
@@ -583,6 +579,7 @@
                 }
 
                 renderIncidents(filtered)
+                renderMapPoints(filtered)
             })
         })
 
@@ -605,6 +602,63 @@
                 alert(`Funcionalidad proximamente`)
             }
         }
+
+        // Mapa
+        const map = L.map('map').setView([25.6866, -100.3161], 12)
+
+        // capa base
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map)
+
+        // colores por categoría
+        const categoryColors = {
+            bache: "#f97316",
+            alumbrado: "#3b82f6",
+            basura: "#16a34a",
+            vandalismo: "#ec4899"
+        }
+
+        // función para icono personalizado
+        function getMarkerIcon(category) {
+            return L.divIcon({
+                className: "",
+                html: `
+                    <div style="
+                        width: 14px;
+                        height: 14px;
+                        background: ${categoryColors[category] || "#999"};
+                        border-radius: 50%;
+                        border: 2px solid white;
+                    "></div>
+                `
+            })
+        }
+
+        // array de markers para poder limpiarlos
+        let markers = []
+
+        function renderMapPoints(incidentsToShow) {
+            // limpiar markers anteriores
+            markers.forEach(m => map.removeLayer(m))
+            markers = []
+
+            incidentsToShow.forEach(inc => {
+                const marker = L.marker([inc.lat, inc.lng], {
+                    icon: getMarkerIcon(inc.category)
+                })
+                .addTo(map)
+                .bindPopup(`
+                    <strong>${inc.type}</strong><br/>
+                    ${inc.description}
+                `)
+
+                markers.push(marker)
+            })
+        }
+
+        // render inicial
+        renderMapPoints(incidents)
     </script>
 </body>
 </html>
