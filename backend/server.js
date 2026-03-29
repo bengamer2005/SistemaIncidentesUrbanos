@@ -33,7 +33,8 @@ const connectDB = async () => {
 connectDB()
 
 // endpoints
-
+const incidentsRoute = require("./routes/incidentsRoutes")
+app.use("/incidentes-urbanos", incidentsRoute)
 
 // server
 app.listen(env.PORT, env.PORT, () => {
