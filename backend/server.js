@@ -34,7 +34,7 @@ connectDB()
 
 // endpoints
 const incidentsRoute = require("./routes/incidentsRoutes")
-app.use("/incidentes-urbanos", incidentsRoute)
+app.use("/incidentes-urbanos/api", incidentsRoute)
 
 // server
 app.listen(env.PORT, env.PORT, () => {

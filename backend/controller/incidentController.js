@@ -1,3 +1,4 @@
+const { Sequelize, DataTypes } = require("sequelize")
 const DB = require("../config/configDB")
 // models
 const CatalogIncidents = require("../models/catalogIncidentsModel")
@@ -11,7 +12,7 @@ const StatusIncidents = require("../models/statusIncidentsModel")
 // GET - todas las incidencias
 const getAllIncidents = async (req, res) => {
     try {
-        const allIncidents = await DB.query("SELECT * FROM incidents_view", {
+        const allIncidents = await DB.query("SELECT * FROM xv_all_incidents", {
             type: DB.QueryTypes.SELECT
         })
 
@@ -26,8 +27,25 @@ const getAllIncidents = async (req, res) => {
     }
 }
 
-// todas las incidencias de un usuario
+// GET - incidencias de un usuario
+const getAllIncidentsByUser = async (req, res) => {
+    try {
+        const usersId = 1 //req.user.id
 
+        const allMyIncidents = await DB.query("", {
+            type: DB.QueryTypes.SELECT
+        })
+
+        const allMysupportedIncidents = await DB.query("SELECT * FROM xv_all_supported_incidents WHERE supporter_id = :users_id", {
+            replacements: { users_id: usersId },
+            type: DB.DataTypes.SELECT
+        })
+    } catch (error) {
+        console.error("Ocurrio un error en getAllIncidentsByUser: ", error)
+        res.status(500).json({ message: "Ocurrio un error en obtener todas las incidencia de un usuario" })
+
+    }
+}
 
 // controllers - catalogos
 // GET - estatus de incidencias
@@ -74,7 +92,7 @@ const createCatalogIncidents = async (req, res) => {
         const newCatalogIncidents = await CatalogIncidents.create({
             name,
             color,
-            // createdBy
+            created_by: req.user.id
         })
 
         res.status(200).json(newCatalogIncidents)
@@ -92,7 +110,9 @@ const updateCatalogIncidents = async (req, res) => {
 
         await CatalogIncidents.update({
             name,
-            color
+            color,
+            updated_by: req.user.id,
+            updated_at: Sequelize.literal("NOW()")
         }, {
             where: { catalog_incidents_id: id }
         })
